@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+/* Brand: dark navy, red and white, from the client's questionnaire. */
+@theme {
+  --color-navy-950: #071226;
+  --color-navy-900: #0b1b36;
+  --color-navy-800: #12284d;
+  --color-navy-700: #1b3866;
+  --color-navy-100: #e6ecf5;
+  --color-navy-50: #f3f6fb;
+  --color-brand-red: #d62832;
+  --color-brand-red-dark: #b31d27;
+  --color-brand-red-50: #fdecec;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #fff;
+  color: var(--color-navy-900);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
+}
+
+/* Keyboard focus that is visible on both white and navy. */
+:focus-visible {
+  outline: 3px solid var(--color-brand-red);
+  outline-offset: 2px;
+}
+
+/* ---------- Motion ---------- */
+
+/* Scroll reveal (see components/Reveal.tsx). */
+[data-reveal] {
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+[data-reveal].reveal-pending {
+  opacity: 0;
+  transform: translateY(28px);
+}
+[data-reveal="left"].reveal-pending {
+  transform: translateX(-32px);
+}
+[data-reveal="right"].reveal-pending {
+  transform: translateX(32px);
+}
+[data-reveal="zoom"].reveal-pending {
+  transform: scale(0.96);
+}
+
+/* Hero entrance, staggered with --d. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Very slow zoom on hero photos. */
+@keyframes slow-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+.animate-slow-zoom {
+  animation: slow-zoom 18s ease-out both;
+}
+
+/* Heartbeat line that draws itself, then pulses. */
+/* Loops rather than running once: the hero's line sits below the fold on most
+   screens, so a single draw on load had already finished before anyone
+   scrolled to it. */
+@keyframes ecg-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  55% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+.ecg-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ecg-draw 4s cubic-bezier(0.65, 0, 0.35, 1) 0.6s infinite;
+}
+
+/* Expanding rings, like a pulse. */
+@keyframes ping-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.animate-ping-ring {
+  animation: ping-ring 2.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Logo heart beats on hover. */
+@keyframes beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  20% {
+    transform: scale(1.12);
+  }
+  40% {
+    transform: scale(0.98);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+}
+.group:hover .beat-on-hover {
+  animation: beat 1s ease-in-out;
+}
+
+/* FAQ: animate <details> open and close where the browser supports it. */
+:root {
+  interpolate-size: allow-keywords;
+}
+.faq-item::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    content-visibility 0.35s allow-discrete;
+}
+.faq-item[open]::details-content {
+  block-size: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  /* The loop ends faded out, so stop it outright rather than letting the
+     shortened animation park on its last (invisible) frame. */
+  .ecg-line {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Long-form copy (policy, about). */
+.prose-site h2 {
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.prose-site h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.prose-site p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+  color: #334155;
+}
+.prose-site ul {
+  margin-bottom: 1rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+  color: #334155;
+}
+.prose-site li {
+  margin-bottom: 0.4rem;
+  line-height: 1.7;
+}
+.prose-site a {
+  color: var(--color-brand-red);
+  text-decoration: underline;
+}
