@@ -1,22 +1,20 @@
-"use server";
-
 import { SITE } from "@/lib/site";
 
 /* ============================================================================
    Every form on the site (seat requests, group quotes, general contact) sends
    through here.
 
-   Two rules:
-     1. The visitor is only told it worked if the email provider accepted it.
-     2. An enquiry is never lost quietly. If email is not set up or fails, the
-        details go to the server log at error level, and the visitor is given
-        the phone number and email instead of a false "thank you".
+   The site is a static export on GitHub Pages, which cannot run server code,
+   so the browser posts straight to Web3Forms (web3forms.com), which emails the
+   enquiry to the inbox the access key was created for.
 
-   SETUP (see .env.example):
-     RESEND_API_KEY   API key from resend.com
-     LEAD_TO_EMAIL    Inbox for enquiries (defaults to the business Gmail)
-     LEAD_FROM_EMAIL  Sender on a domain verified with Resend. A Gmail address
-                      cannot be the sender.
+   Rule: the visitor is only told it worked if Web3Forms accepted it. If the
+   key is missing or the send fails, they get the phone number and email
+   instead of a false "thank you".
+
+   SETUP (see .env.example and README):
+     NEXT_PUBLIC_WEB3FORMS_KEY  Access key from web3forms.com. It is public by
+                                design, it only allows sending to its inbox.
    ========================================================================== */
 
 export type EnquiryState = { ok: boolean; message: string } | null;
@@ -48,7 +46,7 @@ const FIELDS: [string, string][] = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Trim, cap length, and strip the line breaks that allow header injection. */
+/** Trim, cap length, and strip line breaks from single-line fields. */
 const clean = (v: FormDataEntryValue | null, max = 300) =>
   String(v ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, max);
 
@@ -68,34 +66,37 @@ export async function sendEnquiry(_prev: EnquiryState, formData: FormData): Prom
   if (!EMAIL_RE.test(email)) return { ok: false, message: "Please enter a valid email address." };
   if (kind !== "contact" && !phone) return { ok: false, message: "Please enter a phone number so we can confirm." };
 
-  const lines = FIELDS.map(([key, label]) => {
-    const v = clean(formData.get(key), key === "message" ? 4000 : 300);
-    return v ? `${label}: ${v}` : null;
-  }).filter(Boolean);
-  const text = `${KINDS[kind]} from the website\n\n${lines.join("\n")}`;
-  const subject = `${KINDS[kind]}: ${name}${formData.get("company") ? ` (${clean(formData.get("company"), 80)})` : ""}`;
-
-  const key = process.env.RESEND_API_KEY;
-  const from = process.env.LEAD_FROM_EMAIL;
-  const to = process.env.LEAD_TO_EMAIL || SITE.email;
-
-  if (!key || !from) {
-    console.error("[enquiry] Email is not configured. Enquiry details follow so they are not lost:\n" + text);
+  const key = process.env.NEXT_PUBLIC_WEB3FORMS_KEY;
+  if (!key) {
+    console.error("[enquiry] NEXT_PUBLIC_WEB3FORMS_KEY is not set, so the form cannot send.");
     return { ok: false, message: FALLBACK };
   }
 
+  const details = Object.fromEntries(
+    FIELDS.map(([field, label]) => [label, clean(formData.get(field), field === "message" ? 4000 : 300)]).filter(([, v]) => v),
+  );
+  const company = clean(formData.get("company"), 80);
+
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.web3forms.com/submit", {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [to], reply_to: email, subject, text }),
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        access_key: key,
+        subject: `${KINDS[kind]}: ${name}${company ? ` (${company})` : ""}`,
+        from_name: `${SITE.name} website`,
+        replyto: email,
+        "Enquiry type": KINDS[kind],
+        ...details,
+      }),
     });
-    if (!res.ok) {
-      console.error(`[enquiry] Resend returned ${res.status}: ${await res.text()}\n${text}`);
+    const data = (await res.json().catch(() => null)) as { success?: boolean; message?: string } | null;
+    if (!res.ok || !data?.success) {
+      console.error(`[enquiry] Web3Forms returned ${res.status}: ${data?.message ?? "no message"}`);
       return { ok: false, message: FALLBACK };
     }
   } catch (err) {
-    console.error("[enquiry] Send failed:", err, "\n" + text);
+    console.error("[enquiry] Send failed:", err);
     return { ok: false, message: FALLBACK };
   }
 

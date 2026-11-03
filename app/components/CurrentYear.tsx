@@ -1,9 +1,5 @@
-import { cacheLife } from "next/cache";
-
-/** The year for the copyright line. With Cache Components on, `new Date()`
- *  can only be read inside a cached scope; this refreshes daily. */
-export default async function CurrentYear() {
-  "use cache";
-  cacheLife("days");
+/** The year for the copyright line. The site is a static export, so this is
+ *  the year of the last build; any deploy refreshes it. */
+export default function CurrentYear() {
   return <>{new Date().getFullYear()}</>;
 }

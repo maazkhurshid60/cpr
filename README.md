@@ -22,9 +22,26 @@ npm run build
 
 ## Form emails
 
-The seat request, group quote and contact forms send email through Resend. Copy `.env.example`
-to `.env.local` (or set the same variables on the host) and fill in `RESEND_API_KEY` and
-`LEAD_FROM_EMAIL`. Until then the forms show the phone number and email instead of a thank-you,
-and each enquiry is written to the server log so nothing is lost.
+The seat request, group quote and contact forms send from the browser through
+[Web3Forms](https://web3forms.com), because GitHub Pages can't run server code. Create a free
+access key for the inbox that should receive enquiries, then set it as `NEXT_PUBLIC_WEB3FORMS_KEY`
+in `.env.local` for local testing. Until it is set, the forms show the phone number and email
+instead of a thank-you.
 
-Set `NEXT_PUBLIC_SITE_URL` to the live domain so canonical links and the sitemap are correct.
+## Deploying to GitHub Pages
+
+`npm run build` writes a static site to `out/`. `.github/workflows/deploy.yml` builds and
+publishes it on every push to `master`.
+
+One-time setup on GitHub:
+
+1. **Settings -> Pages -> Build and deployment -> Source:** choose **GitHub Actions**.
+2. **Settings -> Secrets and variables -> Actions -> Variables**, add:
+   - `WEB3FORMS_KEY`: the Web3Forms access key (the forms don't send without it).
+   - `SITE_URL`: the live address, e.g. `https://www.drztraining.com`, once a custom domain is
+     attached. Leave it unset while the site is on `username.github.io/cpr`.
+3. Push to `master`, or run the workflow from the **Actions** tab. The site appears at
+   `https://<username>.github.io/cpr/`.
+
+The workflow reads the sub-path (`/cpr`) from the Pages settings, so routes and images work under
+it. Attaching a custom domain under **Settings -> Pages** switches that to the root automatically.

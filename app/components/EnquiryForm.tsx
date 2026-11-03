@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { sendEnquiry, type EnquiryState } from "@/app/actions/enquiry";
+import { sendEnquiry, type EnquiryState } from "@/lib/enquiry";
 import { COURSES } from "@/lib/courses";
 import { SCHEDULE } from "@/lib/schedule";
 import { SITE } from "@/lib/site";
